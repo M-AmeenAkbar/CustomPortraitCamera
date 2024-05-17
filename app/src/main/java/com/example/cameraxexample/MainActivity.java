@@ -16,12 +16,21 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.content.ContentValues;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
@@ -123,9 +132,27 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         Toast.makeText(MainActivity.this, "Image saved at: " + file.getPath(), Toast.LENGTH_SHORT).show();
+
+                        Log.d("ameen", file.getAbsolutePath());
+                        Log.d("ameen", file.getPath());
+
+                        // Insert the image into the MediaStore to make it available in the gallery
+                        ContentValues values = new ContentValues();
+                        values.put(MediaStore.Images.Media.DATA, file.getAbsolutePath());
+                        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+                        Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+
+                        Intent intent=new Intent(MainActivity.this,SecondActivity.class);
+                        intent.putExtra("uri",file.getAbsolutePath());
+                        startActivity(intent);
+                        Log.d("ameen", file.getAbsolutePath());
+                        // Optionally, notify the gallery app that the image has been added
+                        sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_FINISHED));
                     }
                 });
-                startCamera(cameraFacing);
+
+//                startCamera(cameraFacing);
             }
 
             @Override
@@ -140,6 +167,39 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+/*
+public void takePicture(ImageCapture imageCapture) {
+    // Define the path to the DCIM folder
+    String dcimPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getPath();
+    final File file = new File(dcimPath, System.currentTimeMillis() + ".jpg");
+
+    ImageCapture.OutputFileOptions outputFileOptions = new ImageCapture.OutputFileOptions.Builder(file).build();
+    imageCapture.takePicture(outputFileOptions, Executors.newCachedThreadPool(), new ImageCapture.OnImageSavedCallback() {
+        @Override
+        public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+            runOnUiThread(() -> {
+                Toast.makeText(MainActivity.this, "Image saved at: " + file.getPath(), Toast.LENGTH_SHORT).show();
+                // Optionally, insert the image into the MediaStore to make it available in the gallery
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Images.Media.DATA, file.getAbsolutePath());
+                values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+                Uri uri = MainActivity.this.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            });
+            startCamera(cameraFacing);
+        }
+
+        @Override
+        public void onError(@NonNull ImageCaptureException exception) {
+            runOnUiThread(() -> {
+                Toast.makeText(MainActivity.this, "Failed to save: " + exception.getMessage(), Toast.LENGTH_SHORT).show();
+            });
+            startCamera(cameraFacing);
+        }
+    });
+}
+*/
+
+
 
     private void setFlashIcon(Camera camera) {
         if (camera.getCameraInfo().hasFlashUnit()) {
